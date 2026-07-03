@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление ПК</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --accent-color: #007bff;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; display: none; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        button { padding: 12px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .btn-block { width: 100%; }
+        .btn-danger { background: var(--danger-color); color: white; }
+        .btn-danger:hover { background: #bd2130; }
+        .btn-warning { background: var(--warning-color); color: #212529; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-primary:hover { background: #0069d9; }
+        
+        .flex-row { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }
+        .sys-grid { display: flex; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; justify-content: center;}
+        
+        select { 
+            flex: 1; 
+            min-width: 0; 
+            padding: 12px; 
+            background: #2a2a2a; 
+            border: 1px solid #444; 
+            border-radius: 6px; 
+            color: white; 
+            font-size: 15px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        input[type="text"], input[type="password"] { flex: 1; padding: 12px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: white; font-size: 15px; }
+        
+        .shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .btn-green { background: #28a745; color: white; } .btn-green:hover { background: #218838; }
+        .btn-purple { background: #6f42c1; color: white; } .btn-purple:hover { background: #5a32a3; }
+        .btn-orange { background: #fd7e14; color: white; } .btn-orange:hover { background: #e06d0b; }
+
+        #authScreen { width: 100%; max-width: 400px; margin-top: 100px; text-align: center; }
+        #authScreen .card { display: flex; flex-direction: column; gap: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="authScreen">
+    <div class="card">
+        <h3>Введите пароль доступа</h3>
+        <input type="password" id="passwordInput" inputmode="numeric" pattern="[0-9]*" placeholder="Цифровой код">
+        <button class="btn-primary" onclick="login()">Войти</button>
+    </div>
+</div>
+
+<div class="container" id="mainContainer">
+
+    <div class="card">
+        <h3>Система</h3>
+        <button class="btn-danger btn-block" onclick="lockPC()">Блокировать ПК</button>
+        <div class="sys-grid">
+            <button class="btn-warning" onclick="systemPower('restart')">Перезагрузка</button>
+            <button class="btn-danger" onclick="systemPower('shutdown')">Выключение</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Управление процессами</h3>
+        <div class="flex-row">
+            <select id="processSelect">
+                <option value="">Загрузка процессов...</option>
+            </select>
+            <button class="btn-danger" onclick="closeProcess()">Закрыть</button>
+        </div>
+        <button class="btn-primary btn-block" style="padding: 6px; font-size: 13px;" onclick="loadProcesses()">Обновить список</button>
+    </div>
+
+    <div class="card">
+        <h3>Запуск из меню Пуск</h3>
+        <div class="flex-row">
+            <select id="startSelect">
+                <option value="">Загрузка программ...</option>
+            </select>
+            <button class="btn-primary" onclick="launchFromStartSelect()">Запуск</button>
+        </div>
+        <button class="btn-primary btn-block" style="padding: 6px; font-size: 13px;" onclick="loadStartApps()">Обновить меню</button>
+    </div>
+
+    <!--
+    <div class="card">
+        <h3>Запуск по пути файла</h3>
+        <div class="flex-row">
+            <input type="text" id="pathInput" placeholder="C:\Program Files\...">
+            <button class="btn-primary" onclick="launchByPathFromInput()">Запуск</button>
+        </div>
+    </div>
+    -->
+
+    <div class="card">
+        <h3>Быстрый запуск (Шорткаты)</h3>
+        <div class="shortcuts-grid">
+            <button class="btn-green" data-path="C:\\Windows\\system32\\calc.exe" onclick="launchShortcut(this)">Калькулятор</button>
+            <button class="btn-purple" data-path="C:\\Windows\\system32\\notepad.exe" onclick="launchShortcut(this)">Блокнот</button>
+            <button class="btn-orange" data-path="C:\\Program Files (x86)\\Steam\\steam.exe" onclick="launchShortcut(this)">Steam</button>
+            <button class="btn-primary" data-path="C:\\Windows\\explorer.exe" onclick="launchShortcut(this)">Проводник</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API_BASE = '/api';
+
+    function checkCookie() {
+        if (document.cookie.split(';').some((item) => item.trim().startsWith('auth_token='))) {
+            showMainInterface();
+        }
+    }
+
+    function showMainInterface() {
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'block';
+        loadProcesses();
+        loadStartApps();
+    }
+
+    async function login() {
+        const pass = document.getElementById('passwordInput').value;
+        if (!pass) return;
+
+        const response = await fetch(`${API_BASE}/auth`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password: pass })
+        });
+
+        if (response.ok) {
+            showMainInterface();
+        } else {
+            alert('Неверный пароль!');
+            document.getElementById('passwordInput').value = '';
+        }
+    }
+
+    function lockPC() { fetch(`${API_BASE}/lock`, { method: 'POST' }); }
+
+    async function systemPower(action) {
+        const confirmPass = prompt("Для подтверждения действия введите пароль повторно:");
+        if (!confirmPass) return;
+
+        const response = await fetch(`${API_BASE}/system/${action}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password: confirmPass })
+        });
+
+        if (!response.ok) {
+            alert("Неверный пароль! Действие отменено.");
+        } else {
+            alert(action === 'shutdown' ? "Компьютер выключается..." : "Компьютер перезагружается...");
+        }
+    }
+
+    async function loadProcesses() {
+        const select = document.getElementById('processSelect');
+        select.innerHTML = '<option>Загрузка...</option>';
+        try {
+            const response = await fetch(`${API_BASE}/processes`);
+            if (response.status === 401) return;
+            const data = await response.json();
+            select.innerHTML = '';
+            data.forEach(proc => {
+                const opt = document.createElement('option');
+                opt.value = proc;
+                opt.textContent = proc;
+                select.appendChild(opt);
+            });
+        } catch (e) { select.innerHTML = '<option>Ошибка загрузки</option>'; }
+    }
+
+    async function closeProcess() {
+        const procName = document.getElementById('processSelect').value;
+        if (!procName) return;
+        if(confirm(`Закрыть ${procName}?`)) {
+            await fetch(`${API_BASE}/close/${procName}`, { method: 'POST' });
+            loadProcesses();
+        }
+    }
+
+    async function loadStartApps() {
+        const select = document.getElementById('startSelect');
+        select.innerHTML = '<option>Загрузка...</option>';
+        try {
+            const response = await fetch(`${API_BASE}/start-apps`);
+            if (response.status === 401) return;
+            const data = await response.json();
+            select.innerHTML = '';
+            data.forEach(app => {
+                const opt = document.createElement('option');
+                opt.value = app;
+                opt.textContent = app;
+                select.appendChild(opt);
+            });
+        } catch (e) { select.innerHTML = '<option>Ошибка загрузки</option>'; }
+    }
+
+    function launchFromStartSelect() {
+        const name = document.getElementById('startSelect').value;
+        if (!name) return;
+        fetch(`${API_BASE}/launch-start`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: name })
+        });
+    }
+
+    function launchByPathFromInput() {
+        const path = document.getElementById('pathInput').value;
+        if (!path) return;
+        sendPathRequest(path);
+    }
+
+    function launchShortcut(buttonElement) {
+        const path = buttonElement.getAttribute('data-path');
+        sendPathRequest(path);
+    }
+
+    async function sendPathRequest(pathStr) {
+        const response = await fetch(`${API_BASE}/launch-path`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ path: pathStr })
+        });
+        if (response.status === 404) alert('Файл по указанному пути не найден');
+    }
+
+    checkCookie();
+</script>
+</body>
+</html>
