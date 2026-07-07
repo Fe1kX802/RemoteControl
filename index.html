@@ -69,10 +69,14 @@
 
     <div class="card">
         <h3>Система</h3>
-        <button class="btn-danger btn-block" onclick="lockPC()">Блокировать ПК</button>
+        <div class="sys-grid">
+            <button class="btn-danger btn-block" onclick="lockPC()">Блокировать ПК</button>
+            <button class="btn-purple" onclick="systemPower('sleep')">Режим сна</button>
+        </div>
         <div class="sys-grid">
             <button class="btn-warning" onclick="systemPower('restart')">Перезагрузка</button>
             <button class="btn-danger" onclick="systemPower('shutdown')">Выключение</button>
+            
         </div>
     </div>
 
@@ -156,20 +160,45 @@
 
     function lockPC() { fetch(`${API_BASE}/lock`, { method: 'POST' }); }
 
+    // Защищенное выключение, перезагрузка и режим сна
+    // Управление питанием ПК
     async function systemPower(action) {
-        const confirmPass = prompt("Для подтверждения действия введите пароль повторно:");
-        if (!confirmPass) return;
+        let confirmPass = null;
+
+        // Если это перезагрузка или выключение — требуем повторный ввод пароля
+        if (action === 'shutdown' || action === 'restart') {
+            confirmPass = prompt("Для подтверждения действия введите пароль повторно:");
+            if (!confirmPass) return; // Если пользователь нажал отмену
+        }
+
+        // Настраиваем параметры запроса в зависимости от того, нужен ли пароль
+        const fetchOptions = {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        };
+
+        if (confirmPass) {
+            fetchOptions.body = JSON.stringify({ password: confirmPass });
+        } else {
+            // Для режима сна отправляем пустой объект, так как бэкенд больше не ждет пароль
+            fetchOptions.body = JSON.stringify({ password: "" });
+        }
 
         const response = await fetch(`${API_BASE}/system/${action}`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ password: confirmPass })
+            headers: fetchOptions.headers,
+            body: fetchOptions.body
         });
 
         if (!response.ok) {
-            alert("Неверный пароль! Действие отменено.");
+            alert("Ошибка выполнения! Неверный пароль или доступ ограничен.");
         } else {
-            alert(action === 'shutdown' ? "Компьютер выключается..." : "Компьютер перезагружается...");
+            if (action === 'shutdown') alert("Компьютер выключается...");
+            else if (action === 'restart') alert("Компьютер перезагружается...");
+            else if (action === 'sleep') {
+                // Небольшое уведомление перед тем, как ПК уснет и связь оборвется
+                console.log("Компьютер переводится в режим сна...");
+            }
         }
     }
 

@@ -74,6 +74,13 @@ async def restart_pc(req: AuthRequest, auth_token: str = Cookie(None)):
         return {"status": "restart_initiated"}
     raise HTTPException(status_code=401, detail="Неверный пароль")
 
+@app.post("/api/system/sleep")
+async def sleep_pc(auth_token: str = Cookie(None)):
+    check_auth(auth_token)
+    # Мгновенный перевод в режим сна без проверки пароля
+    ctypes.windll.powrprof.SetSuspendState(0, 1, 0)
+    return {"status": "sleep_initiated"}
+
 
 @app.get("/api/processes")
 async def get_processes(auth_token: str = Cookie(None)):
